@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:sliding_action_button/sliding_action_button.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const MyApp());
@@ -33,20 +34,90 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
 
-  void _login() {
+  Future<String?> _getSavedPassword() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_password');
+  }
+
+  Future<void> _savePassword(String password) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_password', password);
+  }
+  void _login() async {
     String password = _passwordController.text;
+    String? savedPassword = await _getSavedPassword();
 
     // Einfaches Beispiel: Passwort checken
-    if (password == '1234') {
+    if (savedPassword == null) {
+      // Erstmaliges Setzen des Passworts
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bitte registriere dich zuerst!')),
+      );
+      return;
+    }
+    if (password == savedPassword) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const HomePage()),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Falsches Passwort')),
+        const SnackBar(content: Text('Falsches Passwort!')),
       );
     }
+  }
+
+  void _showRegisterDialog() async {
+    final pwController = TextEditingController();
+    final confirmController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Registrieren'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: pwController,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'Passwort wählen'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: confirmController,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'Passwort bestätigen'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Abbrechen'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (pwController.text.isNotEmpty &&
+                    pwController.text == confirmController.text) {
+                  await _savePassword(pwController.text);
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Registrierung erfolgreich!')),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Passwörter stimmen nicht überein!')),
+                  );
+                }
+              },
+              child: const Text('Registrieren'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -90,6 +161,15 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     onPressed: _login,
                     child: const Text('Login'),
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white
+                    ),
+                    onPressed: _showRegisterDialog,
+                    child: const Text('Registrieren'),
                   ),
                 ],
               ),
