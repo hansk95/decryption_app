@@ -1,8 +1,10 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/keystore_service.dart';
 import '../services/cryptography.dart';
+import 'qr_scanner_page.dart';
+import 'qr_dialog.dart';
+import 'dart:convert';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -213,6 +215,21 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                   const SizedBox(height: 12),
+                  if (mode == 'Decrypt')
+                    Center(
+                      child: FloatingActionButton(
+                        heroTag: 'qrScan',
+                        mini: true,
+                        child: const Icon(Icons.qr_code_scanner),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const QrScannerPage()),
+                          );
+                        },
+                      ),
+                    ),
+                  const SizedBox(height: 12),
                   if (mode == 'Encrypt') ...[
                     TextField(
                       controller: inputController,
@@ -276,6 +293,18 @@ class _HomePageState extends State<HomePage> {
                           onPressed: () {
                             Clipboard.setData(ClipboardData(text: output));
                             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Kopiert')));
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        TextButton.icon(
+                          icon: const Icon(Icons.qr_code),
+                          label: const Text('QR anzeigen'),
+                          onPressed: () {
+                            final jsonPayload = jsonEncode({
+                              'type': 'message',
+                              'payload': output,
+                            });
+                            QrDialog.show(context, jsonPayload, title: 'Verschlüsselte Nachricht');
                           },
                         ),
                       ],
@@ -352,6 +381,38 @@ class _HomePageState extends State<HomePage> {
                       title: Text(c['name']!),
                       subtitle: Text('id: ${c['id']}'),
                       onTap: () => _onContactTap(c),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        tooltip: 'Kontakt löschen',
+                        onPressed: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Kontakt löschen?'),
+                              content: Text('Willst du ${c['name']} wirklich löschen?'),
+                              actions: [
+                                TextButton(
+                                    onPressed: () => Navigator.pop(context, false),
+                                    child: const Text('Abbrechen')),
+                                ElevatedButton(
+                                    onPressed: () => Navigator.pop(context, true),
+                                    child: const Text('Löschen')),
+                              ],
+                            ),
+                          );
+                          if (confirm == true) {
+                            setState(() {
+                              contacts.removeAt(index);
+                            });
+                            if (KeyStoreService.instance.isUnlocked) {
+                              await KeyStoreService.instance.deleteContactKey(c['id']!);
+                            }
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Kontakt ${c['name']} gelöscht')),
+                            );
+                          }
+                        },
+                      ),
                     ),
                   );
                 },

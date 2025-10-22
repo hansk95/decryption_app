@@ -7,17 +7,25 @@ class QrDialog {
   static Future<void> show(BuildContext context, String payload, {String title = 'QR'}) {
     return showDialog(
       context: context,
+      useRootNavigator: true,
       builder: (context) {
         return AlertDialog(
           title: Text(title),
-          content: SingleChildScrollView(
-            child: Column(
-              children: [
-                QrImage(data: payload, size: 280, version: QrVersions.auto),
-                const SizedBox(height: 12),
-                SelectableText(payload),
-              ],
-            ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min, // Wichtiger Fix: Dialog passt sich Inhalt an
+            children: [
+              SizedBox(
+                width: 280,
+                height: 280,
+                child: QrImageView(
+                  data: payload,
+                  version: QrVersions.auto,
+                  backgroundColor: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 12),
+              SelectableText(payload),
+            ],
           ),
           actions: [
             TextButton(
