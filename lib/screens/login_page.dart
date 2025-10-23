@@ -24,6 +24,9 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _ensureOwnKeypair() async {
+    if (!KeyStoreService.instance.isUnlocked) {
+      await KeyStoreService.instance.unlock();
+    }
     if (KeyStoreService.instance.getOwnPrivateKeyBase64() == null) {
       final pair = await CryptoService.generateX25519KeypairBase64();
       await KeyStoreService.instance.saveOwnKeypairBase64(pair['private']!, pair['public']!);
@@ -59,42 +62,92 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  Widget _buildRequirement(String text, bool fulfilled) {
+    return Row(
+      children: [
+        Icon(
+          fulfilled ? Icons.check_circle : Icons.cancel,
+          color: fulfilled ? Colors.green : Colors.red,
+          size: 18,
+        ),
+        const SizedBox(width: 6),
+        Text(text),
+      ],
+    );
+  }
+
   void _showRegisterDialog() async {
     final pwController = TextEditingController();
     final confirmController = TextEditingController();
+    bool isValid = false;
 
     await showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Registrieren'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: pwController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: 'Passwort wählen'),
+    context: context,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          String password = pwController.text;
+
+          bool hasUppercase = password.contains(RegExp(r'[A-Z]'));
+          bool hasLowercase = password.contains(RegExp(r'[a-z]'));
+          bool hasDigit = password.contains(RegExp(r'[0-9]'));
+          bool hasSpecial = password.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>_\-]'));
+          bool hasLength = password.length >= 12;
+
+          isValid = hasUppercase && hasLowercase && hasDigit && hasSpecial && hasLength;
+
+          return AlertDialog(
+            title: const Text('Registrieren'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: pwController,
+                    obscureText: true,
+                    decoration: const InputDecoration(labelText: 'Passwort wählen'),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: confirmController,
+                    obscureText: true,
+                    decoration: const InputDecoration(labelText: 'Passwort bestätigen'),
+                  ),
+                  const SizedBox(height: 16),
+                  Text("Passwort muss enthalten:"),
+                  const SizedBox(height: 4),
+                  _buildRequirement("Mind. 12 Zeichen", hasLength),
+                  _buildRequirement("Mind. 1 Großbuchstaben", hasUppercase),
+                  _buildRequirement("Mind. 1 Kleinbuchstaben", hasLowercase),
+                  _buildRequirement("Mind. 1 Zahl", hasDigit),
+                  _buildRequirement("Mind. 1 Sonderzeichen", hasSpecial),
+                ],
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: confirmController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: 'Passwort bestätigen'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Abbrechen'),
             ),
-            ElevatedButton(
-              onPressed: () async {
-                if (pwController.text.isNotEmpty &&
-                    pwController.text == confirmController.text) {
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Abbrechen'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (!isValid) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Passwort erfüllt nicht alle Anforderungen!')),
+                    );
+                    return;
+                  }
+                  if (pwController.text != confirmController.text) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Passwörter stimmen nicht überein!')),
+                    );
+                    return;
+                  }
+
                   await _savePassword(pwController.text);
-                  // Keystore entsperren und eigenes Keypair erzeugen und speichern
+
                   try {
                     await KeyStoreService.instance.unlock();
                     await _ensureOwnKeypair();
@@ -104,23 +157,21 @@ class _LoginPageState extends State<LoginPage> {
                     );
                     return;
                   }
+
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Registrierung erfolgreich!')),
                   );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Passwörter stimmen nicht überein!')),
-                  );
-                }
-              },
-              child: const Text('Registrieren'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+                },
+                child: const Text('Registrieren'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
 
   @override
   Widget build(BuildContext context) {

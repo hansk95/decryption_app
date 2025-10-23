@@ -14,18 +14,31 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // lokale Kontaktliste (id,name). Du kannst sie später aus persistenter Quelle laden.
-  List<Map<String, String>> contacts = [
-    {'id': 'max', 'name': 'Max Mustermann'},
-    {'id': 'erika', 'name': 'Erika Musterfrau'},
-  ];
+
+  // list for contacts with id, name
+  List<Map<String, String>> contacts = [];
 
   String? _ownPublic;
+
+  // load contacts from keystore
+  Future<void> _loadContactsFromKeystore() async {
+    if (!KeyStoreService.instance.isUnlocked) return;
+
+    final ids = KeyStoreService.instance.listContactIdsFromKeystore(); 
+    setState(() {
+      contacts = ids.map((id) {
+        final name = KeyStoreService.instance.getContactName(id) ?? id;
+        final pub = KeyStoreService.instance.getContactPublicKey(id) ?? '';
+        return {'id': id, 'name': name, 'publicKey': pub};
+      }).toList();
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     _loadOwnPublic();
+    _loadContactsFromKeystore();
   }
 
   void _loadOwnPublic() {
@@ -168,7 +181,8 @@ class _HomePageState extends State<HomePage> {
         if (!KeyStoreService.instance.isUnlocked) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Keystore gesperrt: PublicKey nicht gespeichert')));
         } else {
-          await KeyStoreService.instance.saveContactPublicKey(id, pub);
+          // await KeyStoreService.instance.saveContactPublicKey(id, pub);
+          await KeyStoreService.instance.saveContact(id, name, pub);
         }
       }
     }
@@ -405,7 +419,7 @@ class _HomePageState extends State<HomePage> {
                               contacts.removeAt(index);
                             });
                             if (KeyStoreService.instance.isUnlocked) {
-                              await KeyStoreService.instance.deleteContactKey(c['id']!);
+                              await KeyStoreService.instance.deleteContact(c['id']!);
                             }
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('Kontakt ${c['name']} gelöscht')),

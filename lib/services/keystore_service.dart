@@ -1,4 +1,3 @@
-// ...existing code...
 import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
@@ -87,9 +86,12 @@ class KeyStoreService {
   }
 
   // CRUD-Operationen für symmetrische contact-keys (prefix: contact_key:)
-  Future<void> saveContactKey(String contactId, String keyString) async {
+  Future<void> saveContactKey(String contactId, String name, [String? publicKey]) async {
     if (!_unlocked) throw StateError('Keystore locked');
-    _inMemory['contact_key:$contactId'] = keyString;
+    _inMemory['contact_name:$contactId'] = name;
+    if (publicKey != null) {
+      _inMemory['contact_pub:$contactId'] = publicKey;
+    }
     await _persist();
   }
 
@@ -98,9 +100,11 @@ class KeyStoreService {
     return _inMemory['contact_key:$contactId'];
   }
 
-  Future<void> deleteContactKey(String contactId) async {
+  Future<void> deleteContact(String contactId) async {
     if (!_unlocked) throw StateError('Keystore locked');
     _inMemory.remove('contact_key:$contactId');
+    _inMemory.remove('contact_pub:$contactId');
+    _inMemory.remove('contact_name:$contactId');
     await _persist();
   }
 
@@ -137,9 +141,23 @@ class KeyStoreService {
     await _persist();
   }
 
+  Future<void> saveContact(String id, String name, [String? publicKey]) async {
+    if (!_unlocked) throw StateError('Keystore locked');
+    _inMemory['contact_name:$id'] = name;
+    if (publicKey != null) {
+      _inMemory['contact_pub:$id'] = publicKey;
+    }
+    await _persist();
+  }
+
   String? getContactPublicKey(String contactId) {
     if (!_unlocked) throw StateError('Keystore locked');
     return _inMemory['contact_pub:$contactId'];
+  }
+
+  String? getContactName(String contactId) {
+    if (!_unlocked) throw StateError('Keystore locked');
+    return _inMemory['contact_name:$contactId'];
   }
 
   List<String> listContactIdsFromKeystore() {
