@@ -36,7 +36,7 @@ Eine kleine Flutter‑App zum Verwalten von Kontakten und Schlüsseln (Public/Pr
 ## Wichtige Hinweise
 - Keystore: KeyStoreService speichert einen Master‑Key im Secure Storage und verschlüsselt einen Blob in SharedPreferences. Beim Sperren (lock) werden Schlüssel aus dem Arbeitsspeicher entfernt, beim Entsperren (unlock) neu geladen.
 
-## erste Projektskizze
+## Erste Projektskizze
 ![App Screenshot](assets/images/skizze.png)
 
 ## Entwicklung
@@ -58,11 +58,11 @@ Eine kleine Flutter‑App zum Verwalten von Kontakten und Schlüsseln (Public/Pr
 ## Verschlüsselung
 
 - Die App verwendet ein hybrides Verschlüsselungsverfahren basierend auf Elliptic Curve Diffie-Hellman (X25519) und AES:
-Jeder Nutzer besitzt ein statisches Public/Private Keypair.
-Für jede Nachricht wird zusätzlich ein flüchtiges (ephemeres) Keypair erzeugt.
-Der ephemere private Key wird mit dem statischen Public Key des Empfängers kombiniert, um ein Shared Secret zu berechnen.
-Dieses Shared Secret dient als Schlüssel für die symmetrische AES-Verschlüsselung des Nachrichtentextes.
-Die Nachricht enthält den ephemeren Public Key, damit der Empfänger denselben Shared Secret und damit den AES-Key rekonstruieren kann.
+- Jeder Nutzer besitzt ein statisches Public/Private Keypair.
+- Für jede Nachricht wird zusätzlich ein flüchtiges (ephemeres) Keypair erzeugt.
+- Der ephemere private Key wird mit dem statischen Public Key des Empfängers kombiniert, um ein Shared Secret zu berechnen.
+- Dieses Shared Secret dient als Schlüssel für die symmetrische AES-Verschlüsselung des Nachrichtentextes.
+- Die Nachricht enthält den ephemeren Public Key, damit der Empfänger denselben Shared Secret und damit den AES-Key rekonstruieren kann.
 
 Mehr Infos zum verwendeten Verfahren: curves.xargs.org
 
