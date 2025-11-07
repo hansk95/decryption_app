@@ -15,8 +15,10 @@ class KeyStoreService {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   final Map<String, String> _inMemory = {}; // stores keys and special entries
 
-  late final Encrypter _encrypter;
-  late final Key _masterKey; // AES key used for encrypt/decrypt
+  // late final Encrypter _encrypter;
+  // late final Key _masterKey; // AES key used for encrypt/decrypt
+  Encrypter? _encrypter;
+  Key? _masterKey; // AES key used for encrypt/decrypt
   bool _unlocked = false;
 
   bool get isUnlocked => _unlocked;
@@ -40,7 +42,7 @@ class KeyStoreService {
     if (base64Key == null) throw StateError('No master key present');
     final keyBytes = base64Decode(base64Key);
     _masterKey = Key(Uint8List.fromList(keyBytes));
-    _encrypter = Encrypter(AES(_masterKey, mode: AESMode.cbc));
+    _encrypter = Encrypter(AES(_masterKey!, mode: AESMode.cbc));
     // lade blob aus prefs
     final prefs = await SharedPreferences.getInstance();
     final blob = prefs.getString(_prefsBlobKey);
@@ -54,7 +56,8 @@ class KeyStoreService {
       final cipherBase64 = map['cipher'] as String;
       final iv = IV(base64Decode(ivBase64));
       final encrypted = Encrypted(base64Decode(cipherBase64));
-      final plain = _encrypter.decrypt(encrypted, iv: iv);
+      // _encrypter ist hier sicher gesetzt, daher null-assert
+      final plain = _encrypter!.decrypt(encrypted, iv: iv);
       final decoded = jsonDecode(plain) as Map<String, dynamic>;
       _inMemory
         ..clear()
@@ -67,8 +70,9 @@ class KeyStoreService {
   void lock() {
     _inMemory.clear();
     _unlocked = false;
-    // master key stays in memory until app restart; if you want remove it:
-    // optionally zeroize _masterKey (not shown)
+    // Master-Key und Encrypter entfernen, damit unlock später neu initialisiert werden kann
+    _masterKey = null;
+    _encrypter = null;
   }
 
   // interne Persistierung: verschlüsselt _inMemory und speichert in prefs
@@ -77,7 +81,8 @@ class KeyStoreService {
     final plain = jsonEncode(_inMemory);
     final ivBytes = List<int>.generate(16, (_) => Random.secure().nextInt(256));
     final iv = IV(Uint8List.fromList(ivBytes));
-    final encrypted = _encrypter.encrypt(plain, iv: iv);
+    // _encrypter ist nur gesetzt, wenn unlocked == true
+    final encrypted = _encrypter!.encrypt(plain, iv: iv);
     final store = jsonEncode({
       'iv': base64Encode(iv.bytes),
       'cipher': base64Encode(encrypted.bytes),

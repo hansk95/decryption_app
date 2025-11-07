@@ -1,16 +1,43 @@
-# test_application
+# Decrypt
 
-A new Flutter project.
+Eine kleine Flutter‑App zum Verwalten von Kontakten und Schlüsseln (Public/Private), Erzeugen und Anzeigen von QR‑Codes sowie Verschlüsselungsfunktionen über einen internen Keystore.
 
-## Getting Started
+## Voraussetzungen
+- Flutter SDK (>= 3.9)
+- Android SDK
+- Geräteberechtigungen für Kamera (wenn QR‑Scanner benutzt werden will)
 
-This project is a starting point for a Flutter application.
+## Schnellstart
+1. Abhängigkeiten installieren:
+   ```
+   flutter pub get
+   ```
+2. Auf einem verbundenen Gerät starten:
+   ```
+   flutter run -d (device_id)
+   ```
+3. Release‑APK (Android) bauen:
+   ```
+   flutter build apk --release
+   ```
 
-A few resources to get you started if this is your first Flutter project:
+## Projektstruktur (wichtigste Dateien)
+- lib/main.dart — App‑Start; initialisiert KeyStoreService und setzt die Routen.
+- lib/screens/
+  - login_page.dart — Registrierung / Login (Passwortverwaltung).
+  - home_page.dart — Hauptansicht: eigener Public Key, Kontakte, Aktionen.
+  - qr_scanner_page.dart — QR‑Scanner (falls vorhanden).
+  - qr_dialog.dart — QR‑Dialog zur Anzeige / Teilen / Kopieren.
+- lib/services/
+  - keystore_service.dart — zentrale Logik zum Speichern/Verschlüsseln des Keystores.
+  - cryptography.dart — kryptografische Hilfsfunktionen (Key‑Erzeugung, Verschlüsselung/Entschlüsselung).
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Wichtige Hinweise
+- Keystore: KeyStoreService speichert einen Master‑Key im Secure Storage und verschlüsselt einen Blob in SharedPreferences. Beim Sperren (lock) werden Schlüssel aus dem Arbeitsspeicher entfernt, beim Entsperren (unlock) neu geladen.
+
+## Entwicklung & Beiträge
+- Für UI‑Änderungen sind die vorhanden Widgets in lib/screens vorgesehen
+
+## Lizenz
+Privates Projekt — nicht für Veröffentlichung vorgesehen (publish_to: 'none' im pubspec.yaml). Bei Bedarf Lizenz ergänzen.

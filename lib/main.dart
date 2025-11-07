@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '(D)Encrypt',
+      title: 'Ncrypt',
       theme: ThemeData(primarySwatch: Colors.blue),
       initialRoute: '/login',
       routes: {

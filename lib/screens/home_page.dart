@@ -62,7 +62,7 @@ class _HomePageState extends State<HomePage> {
     }
 
     final contactPubs = KeyStoreService.instance.listContactIdsFromKeystore();
-    final contactKeys = KeyStoreService.instance.listContactIdsForKeys();
+    // keine symmetrischen Kontakt-Keys verwendet -> nicht mehr abfragen
 
     await showDialog(
       context: context,
@@ -100,15 +100,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ],
                 const SizedBox(height: 12),
-                const Text('Kontakt - Symmetrische Keys:', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 6),
-                if (contactKeys.isEmpty) const Text('Keine symmetrischen Kontakt-Keys gespeichert.'),
-                for (final id in contactKeys) ...[
-                  const Divider(),
-                  Text('Kontakt: $id', style: const TextStyle(fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 4),
-                  SelectableText(KeyStoreService.instance.getContactKey(id) ?? '---'),
-                ],
+                // Abschnitt für symmetrische Kontakt-Keys entfernt
                 const SizedBox(height: 8),
                 const Divider(),
                 TextButton(
@@ -377,12 +369,20 @@ class _HomePageState extends State<HomePage> {
                 title: const Text('Mein Public Key'),
                 subtitle: SelectableText(_ownPublic ?? 'Keystore gesperrt oder kein Key'),
                 trailing: IconButton(
-                  icon: const Icon(Icons.refresh),
-                  tooltip: 'Refresh',
-                  onPressed: _loadOwnPublic,
+                  icon: const Icon(Icons.copy),
+                  tooltip: 'Kopieren',
+                  onPressed: () {
+                    final key = _ownPublic;
+                    if (key != null && key.isNotEmpty) {
+                      Clipboard.setData(ClipboardData(text: key));
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PublicKey kopiert')));
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Keystore gesperrt oder kein Key')));
+                    }
+                  },
+                ),
                 ),
               ),
-            ),
             const SizedBox(height: 12),
             Expanded(
               child: ListView.separated(
